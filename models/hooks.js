@@ -6,4 +6,4 @@ export const setUpdateSettings = function (next) {
 export const handleSaveError = (error, data, next) => {
   error.status = 400;
   next();
-};
+};``
