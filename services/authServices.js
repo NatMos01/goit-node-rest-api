@@ -1,12 +1,20 @@
-import bcrypt from "bcrypt";
+import User from '../models/users.js';
 
-import user from "../models/User.js";
-
-export const signup = async (data) => {
-  const { password } = data;
-  const hashPassword = await bcrypt.hash(password, 10);
-  return user.create({ ...data, password: hashPassword });
+export const signup = async data => {
+    const response = await User.create(data);
+    return { email: response.email, subscription: response.subscription };
 };
 
-export const setToken = (id, token = "") =>
-  user.findByIdAndUpdate(id, { token });
+export const findUser = async user => {
+    return await User.findOne(user);
+};
+
+export const findUserById = async id => {
+    return await User.findById(id);
+};
+
+export const updateUser = async (user, data) => {
+    return await User.findByIdAndUpdate(user, data, {
+        returnDocument: 'after',
+    }).select('email subscription -_id');
+};

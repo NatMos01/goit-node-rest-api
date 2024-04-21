@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+import User from "../models/users.js";
 
 export const findUser = (filter) => User.findOne(filter);
 
