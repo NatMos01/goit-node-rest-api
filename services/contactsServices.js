@@ -7,12 +7,12 @@ export const listContacts = async (filter = {}) => {
 
 //GET ID
 export const getContactById = async contactId => {
-    return Contact.findById(contactId);
+    return Contact.findOne(contactId);
 };
 
 //DEL
 export const removeContact = async contactId => {
-    return Contact.findByIdAndDelete(contactId);
+    return Contact.findOneAndDelete(contactId);
 };
 
 //POST
@@ -22,7 +22,7 @@ export const addContact = async data => {
 
 //PUT ID
 export const updateContactById = async (contactId, data) => {
-    return Contact.findByIdAndUpdate(contactId, data, {
+    return Contact.findOneAndUpdate(contactId, data, {
         new: true,
     });
 };
@@ -30,7 +30,7 @@ export const updateContactById = async (contactId, data) => {
 //PATCH
 export const updateFavoriteStatus = async (contactId, data) => {
     const status = { favorite: data };
-    return Contact.findByIdAndUpdate(contactId, status, {
+    return Contact.findOneAndUpdate(contactId, status, {
         new: true,
     });
 };
