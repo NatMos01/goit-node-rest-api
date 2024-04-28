@@ -1,58 +1,36 @@
-import { promises as fs } from "fs";
-import { join } from "path";
-import { nanoid } from "nanoid";
+import { Contact } from '../models/contacts.js';
 
-const contactsPath = join("db", "contacts.json");
+//GET
+export const listContacts = async (filter = {}) => {
+    return Contact.find(filter).populate('owner', 'email subscription');
+};
 
-async function listContacts() {
-  try {
-    const data = await fs.readFile(contactsPath);
-    const dataArr = JSON.parse(data);
-    return dataArr;
-  } catch (error) {
-    throw new Error("Failed to list contacts: " + error.message);
-  }
-}
+//GET ID
+export const getContactById = async contactId => {
+    return Contact.findOne(contactId);
+};
 
-async function getContactById(contactId) {
-  try {
-    const dataArr = await listContacts();
-    return dataArr.find((contact) => contact.id === contactId) || null;
-  } catch (error) {
-    throw new Error("Failed to get contact by ID: " + error.message);
-  }
-}
+//DEL
+export const removeContact = async contactId => {
+    return Contact.findOneAndDelete(contactId);
+};
 
-async function removeContact(contactId) {
-  try {
-    const dataArr = await listContacts();
-    const index = dataArr.findIndex((contact) => contact.id === contactId);
-    if (index === -1) {
-      return null;
-    }
-    const [result] = dataArr.splice(index, 1);
-    await fs.writeFile(contactsPath, JSON.stringify(dataArr, null, 2));
-    return result;
-  } catch (error) {
-    throw new Error("Failed to remove contact: " + error.message);
-  }
-}
+//POST
+export const addContact = async data => {
+    return Contact.create(data);
+};
 
-async function addContact(name, email, phone) {
-  try {
-    const dataArr = await listContacts();
-    const newContact = {
-      id: nanoid(),
-      name,
-      email,
-      phone,
-    };
-    dataArr.push(newContact);
-    await fs.writeFile(contactsPath, JSON.stringify(dataArr, null, 2));
-    return newContact;
-  } catch (error) {
-    throw new Error("Failed to add contact: " + error.message);
-  }
-}
+//PUT ID
+export const updateContactById = async (contactId, data) => {
+    return Contact.findOneAndUpdate(contactId, data, {
+        new: true,
+    });
+};
 
-export { listContacts, getContactById, removeContact, addContact };
+//PATCH
+export const updateFavoriteStatus = async (contactId, data) => {
+    const status = { favorite: data };
+    return Contact.findOneAndUpdate(contactId, status, {
+        new: true,
+    });
+};

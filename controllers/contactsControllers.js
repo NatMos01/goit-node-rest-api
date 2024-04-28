@@ -1,96 +1,87 @@
-import { nanoid } from "nanoid";
-import {
-  listContacts,
-  addContact,
-  getContactById,
-  removeContact,
-} from "../services/contactsServices.js";
-import { promises as fs } from "fs";
-import { createContactSchema } from "../schemas/contactsSchemas.js";
-import validateBody from "../helpers/validateBody.js";
-import HttpError from "../helpers/HttpError.js";
-import { updateContactSchema } from "../schemas/contactsSchemas.js";
+import * as contactsService from '../services/contactsServices.js';
 
-export const getAllContacts = async (req, res) => {
-  try {
-    const contacts = await listContacts();
-    res.status(200).json(contacts);
-  } catch (error) {
-    res.status(500).json({ message: error.message, contacts });
-  }
+import HttpError from '../helpers/HttpError.js';
+
+import ctrlWrapper from '../middlewares/ctrlWrapper.js';
+
+const getAllContacts = async (req, res) => {
+    const { _id: owner } = req.user;
+
+    const results = await contactsService.listContacts({ owner });
+    res.json(results);
 };
 
-export const getOneContact = async (req, res) => {
-  try {
+const getOneContact = async (req, res) => {
     const { id } = req.params;
-    const contact = await getContactById(id);
-    if (contact) {
-      res.status(200).json(contact);
-    } else {
-      res.status(404).json({ message: "Not found" });
+    const { _id: owner } = req.user;
+
+    const result = await contactsService.getContactById({ _id: id, owner });
+
+    if (!result) {
+        throw HttpError(404, `Not found`);
     }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+
+    res.json(result);
 };
 
-export const deleteContact = async (req, res) => {
-  try {
+const deleteContact = async (req, res) => {
     const { id } = req.params;
+    const { _id: owner } = req.user;
 
-    const deleteContact = await removeContact(id);
+    const result = await contactsService.removeContact({ _id: id, owner });
 
-    if (deleteContact) {
-      res.status(200).json(deleteContact);
-    } else {
-      res.status(404).json({ message: "Not found" });
+    if (!result) {
+        throw HttpError(404, 'Not found');
     }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+
+    res.json(result);
 };
 
-export const createContact = async (req, res, next) => {
-  try {
-    const { error } = createContactSchema.validate(req.body);
-    if (error) {
-      throw HttpError(400, "Bad Request");
-    }
-    const { name, email, phone } = req.body;
-    const newContact = await addContact(name, email, phone);
-    res.status(201).json(newContact);
-  } catch (error) {
-    next(error);
-  }
+const createContact = async (req, res) => {
+    const { _id: owner } = req.user;
+
+    const result = await contactsService.addContact({ ...req.body, owner });
+
+    res.status(201).json(result);
 };
 
-export const updateContact = async (req, res) => {
-  try {
-    const { error, value } = updateContactSchema.validate(req.body);
-
-    if (error) {
-      return res.status(400).json({ message: error.message });
-    }
-
-    const contactsDB = await fs.readFile("./db/contacts.json");
-    const contacts = JSON.parse(contactsDB);
-    const { name, email, phone } = value;
+const updateContact = async (req, res) => {
     const { id } = req.params;
-    const contactIndex = contacts.findIndex((item) => item.id === id);
+    const { _id: owner } = req.user;
 
-    if (contactIndex === -1) {
-      return res.status(404).json({ message: "Not found" });
+    const result = await contactsService.updateContactById(
+        { _id: id, owner },
+        req.body
+    );
+
+    if (!result) {
+        throw HttpError(404, 'Not found');
+    }
+    res.status(200).json(result);
+};
+
+const updateStatusContact = async (req, res) => {
+    const { id } = req.params;
+    const { _id: owner } = req.user;
+    const favorite = req.body.favorite;
+
+    const result = await contactsService.updateFavoriteStatus(
+        { _id: id, owner },
+        favorite
+    );
+
+    if (!result) {
+        throw HttpError(404, 'Not found');
     }
 
-    const contact = contacts[contactIndex];
-    contact.name = name || contact.name;
-    contact.email = email || contact.email;
-    contact.phone = phone || contact.phone;
+    res.status(200).json(result);
+};
 
-    await fs.writeFile("./db/contacts.json", JSON.stringify(contacts, null, 2));
-
-    res.status(200).json(contact);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+export default {
+    getAllContacts: ctrlWrapper(getAllContacts),
+    getOneContact: ctrlWrapper(getOneContact),
+    deleteContact: ctrlWrapper(deleteContact),
+    createContact: ctrlWrapper(createContact),
+    updateContact: ctrlWrapper(updateContact),
+    updateStatusContact: ctrlWrapper(updateStatusContact),
 };
